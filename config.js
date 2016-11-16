@@ -1,7 +1,7 @@
 var config={
 
   // Show chrome developer tools for main window
-  devTools: true,
+  //devTools: true,
 
   // Redirect console in terminal. Not recommended when using devTools because
   // the real line numbers becomes obfuscated for messages in the console
@@ -12,8 +12,8 @@ var config={
   // but to run "headless" you need something like Xvfb or Xvnc
   browserWindow: {
 //  show: false,
-    width: '100%',
-    height: '100%'
+    width: 1024,
+    height: 768
   },
 
   url: `file://${__dirname}/index.html`,
@@ -61,7 +61,7 @@ var config={
        so the event handler for the page is called first.
       */
 
-      devTools: true,
+      //devTools: true,
 
       // webcontents.loadURL_options
       loadURL_options: {
@@ -76,7 +76,7 @@ var config={
 		webview2: {
 			url: 'about:blank',
 			pageClass: 'content',
-			devTools: true
+			//devTools: true
 		}
 
   },

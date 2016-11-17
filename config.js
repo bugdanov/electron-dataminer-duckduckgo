@@ -3,78 +3,21 @@ var querystring=require('querystring');
 var sanitize=require('sanitize-filename');
 
 var config={
-
-  // Show chrome developer tools for main window
   devTools: false,
-
-  // Redirect console in terminal. Not recommended when using devTools because
-  // the real line numbers becomes obfuscated for messages in the console
   consoleRedirect: true,
 
-  // Configure the main browserWindow
-  // You can hide the main browser window with options show: false,
-  // but to run "headless" you need something like Xvfb or Xvnc
   browserWindow: {
-//  show: false,
+    show: true,
     width: 1024,
     height: 768
   },
 
   url: `file://${__dirname}/index.html`,
 
-  // Configure webviews
   webviews: {
-
-    // The webview DOM element id
     webview1:  {
-
-      // you can set optional webview attributes below eg:
-      attr: {
-//        partition: 'persist:webview1'
-      },
-
-      // The pageClass module name for this webview
-      // (will be stored in config.pageClass['my-page'])
       pageClass: 'duckduckgo',
-
-      /*
-       For example if you declare:
-         pageClass: 'mypage',
-       then electron-dataminer will try to load:
-         1. A module named __dirname/page/mypage.js (see electron-dataminer-test/page/my-page.js)
-         2. A module named electron-dataminer-mypage (see package electron-dataminer-mypage)
-         3. A module named mypage (figure it out)
-       the module should export a function returning the module exports (see page/my-page.js below)
-
-       The same rules apply for the "my-api" module declared below
-      */
-
-      // The api module name for this webview
-      // (will be stored in config.api['my-api'])
-      // api: 'my-api',
-
-      // The url to load in the webview
-      // (Can be overriden by the pageClass or api module with the value
-      // returned by optional function <module>.renderer.loadURL())
       url: 'https://duckduckgo.com',
-      /*
-       When the url above is loaded in the webview, the webview process will send
-       a 'processPage' event to the renderer process which can be
-       handled in the pageClass or/and api module (module.exports.ipcEvents.processPage)
-       Code specific to a page class may override code specific to the type of data to mine,
-       so the event handler for the page is called first.
-      */
-
-      devTools: false,
-
-      // webcontents.loadURL_options
-      loadURL_options: {
-        // see https://github.com/electron/electron/blob/master/docs/api/web-contents.md#webcontentsloadurlurl-options
-      }
-
-      // You can add here any other option specific to this webview to be used
-      // by the pageClass or the api modules
-
     },
 
 		webview2: {
@@ -82,14 +25,9 @@ var config={
 			pageClass: 'content',
 			devTools: false
 		}
-
   },
 
   pageClass: {
-    // pageClass modules specified in the webview options will be stored here.
-    // You could require (but should not define) page classes here
-
-    // webview1 event handlers
     duckduckgo: {
       webview: {
         ipcEvents: {
@@ -102,6 +40,7 @@ var config={
                 href: href,
                 query: querystring.parse(window.location.search.substr(1)).q
               });
+
             } else {
               // click on 'load more'
               var more=$$$('.result--more a');
@@ -110,7 +49,7 @@ var config={
                 // should wait for something instead of only delay
                 setTimeout(function(){
                   duckduckgo_webview_processPage(event,options);
-                },30000);
+                },10000);
               }
             }
           },
@@ -129,9 +68,11 @@ var config={
             var data=event.args[0];
             var href=data.href;
             webview1.query=data.query;
+
             // open url in webview2
             webview2.src=href;
             console.log('opening '+href);
+
             // force webview2.processPage event after 30sec
             webview2.timeout=setTimeout(function(){
               console.log('timeout');
@@ -140,7 +81,8 @@ var config={
           }
         }
       }
-		},
+
+		}, // duckduckgo
 
     // webview2 event handlers
 		content: {
@@ -173,6 +115,7 @@ var config={
 					}
 				}
 			},
+
       renderer: {
         ipcEvents: {
           // save the text sent from webview1
@@ -205,15 +148,9 @@ var config={
           }
         }
       }
-    }
-  },
 
-  api: {
-    // api modules specified in the webview options will be stored here.
-    // You could require (but should not define) apis here
-  }
-
-
-}
+    } // content
+  } // pageClass
+} // config
 
 module.exports=config;

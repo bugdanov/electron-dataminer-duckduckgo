@@ -1,11 +1,15 @@
+var htmlToText=require('html-to-text');
+var querystring=require('querystring');
+var sanitize=require('sanitize-filename');
+
 var config={
 
   // Show chrome developer tools for main window
-  //devTools: true,
+  devTools: false,
 
   // Redirect console in terminal. Not recommended when using devTools because
   // the real line numbers becomes obfuscated for messages in the console
-  // consoleRedirect: false
+  consoleRedirect: true,
 
   // Configure the main browserWindow
   // You can hide the main browser window with options show: false,
@@ -61,7 +65,7 @@ var config={
        so the event handler for the page is called first.
       */
 
-      //devTools: true,
+      devTools: false,
 
       // webcontents.loadURL_options
       loadURL_options: {
@@ -76,7 +80,7 @@ var config={
 		webview2: {
 			url: 'about:blank',
 			pageClass: 'content',
-			//devTools: true
+			devTools: false
 		}
 
   },
@@ -94,7 +98,10 @@ var config={
             var href=$$$('a.result__a:first').attr('href');
             if (href) {
               // send result to renderer
-              event.sender.sendToHost('href',href);
+              event.sender.sendToHost('processSearchResult',{
+                href: href,
+                query: querystring.parse(window.location.search.substr(1)).q
+              });
             } else {
               // click on 'load more'
               var more=$$$('.result--more a');
@@ -118,8 +125,10 @@ var config={
       renderer: {
         ipcEvents: {
           // receive search result from webview.processPage event handler
-          href: function(event,options){
-            var href=event.args[0];
+          processSearchResult: function(event,options){
+            var data=event.args[0];
+            var href=data.href;
+            webview1.query=data.query;
             // open url in webview2
             webview2.src=href;
             console.log('opening '+href);
@@ -138,20 +147,26 @@ var config={
 			webview: {
 				ipcEvents: {
 					processPage: function(event,options) {
-            var text;
+            var text='';
             // check for our jQuery or another
             var $$$=$$$||window.jQuery;
             if (!$$$) {
-              // probably timeout
-              text='problem';
+              if (window.location.href!='about:blank') {
+                // probably timeout
+                text='problem';
+              }
 
             } else {
               // convert to text, without the scripts
-              var body=$$$('body').clone();
-              $$$('script',body).remove();
-              text=body.text();
+              var html=$$$('html').html()
+              text=htmlToText.fromString(html,{
+                wordwrap: false,
+                ignoreHref: true,
+                ignoreImage: true
+              });
             }
             event.sender.sendToHost('saveContent',{
+              host: window.location.hostname,
               href: window.location.href,
               text: text
             });
@@ -165,10 +180,10 @@ var config={
             clearTimeout(webview2.timeout);
             var data=event.args[0];
             if (data.text.length) {
-              // filename is timestamp
-              var filename=Date.now()+'.txt'
+              // filename is <querystring>-<timestamp>-<hostname>.txt
+              var filename=webview1.query.replace(/ /g,'_')+'-'+Date.now()+'-'+data.host+'.txt'
               require('fs').writeFile(
-                filename,
+                sanitize(filename),
                 // first line is href
                 data.href+'\n'+data.text,
                 function(err){

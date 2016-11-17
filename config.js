@@ -20,11 +20,11 @@ var config={
       url: 'https://duckduckgo.com',
     },
 
-		webview2: {
-			url: 'about:blank',
-			pageClass: 'content',
-			devTools: false
-		}
+    webview2: {
+      url: 'about:blank',
+      pageClass: 'content',
+      devTools: false
+    }
   },
 
   pageClass: {
@@ -82,13 +82,13 @@ var config={
         }
       }
 
-		}, // duckduckgo
+    }, // duckduckgo
 
     // webview2 event handlers
-		content: {
-			webview: {
-				ipcEvents: {
-					processPage: function(event,options) {
+    content: {
+      webview: {
+        ipcEvents: {
+          processPage: function(event,options) {
             var text='';
             // check for our jQuery or another
             var $$$=$$$||window.jQuery;
@@ -112,9 +112,9 @@ var config={
               href: window.location.href,
               text: text
             });
-					}
-				}
-			},
+          }
+        }
+      },
 
       renderer: {
         ipcEvents: {

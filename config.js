@@ -18,6 +18,7 @@ var config={
     webview1:  {
       pageClass: 'duckduckgo',
       url: 'https://duckduckgo.com',
+      devTools: false
     },
 
     webview2: {
@@ -95,13 +96,13 @@ var config={
             if (!$$$) {
               if (window.location.href!='about:blank') {
                 // probably timeout
-                text='problem';
+                text='***problem***\n';
               }
 
             } else {
               // convert to text, without the scripts
-              var html=$$$('html').html()
-              text=htmlToText.fromString(html,{
+              var html=document.body.parentElement.outerHTML;
+              text+=htmlToText.fromString(html,{
                 wordwrap: false,
                 ignoreHref: true,
                 ignoreImage: true

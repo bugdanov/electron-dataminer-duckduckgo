@@ -1,6 +1,8 @@
 var htmlToText=require('html-to-text');
 var querystring=require('querystring');
 var sanitize=require('sanitize-filename');
+var path=require('path');
+var fs=require('fs');
 
 var config={
   devTools: false,
@@ -38,6 +40,7 @@ var config={
             if (href) {
               // send result to renderer
               event.sender.sendToHost('processSearchResult',{
+                electron: options.electron,
                 href: href,
                 query: querystring.parse(window.location.search.substr(1)).q
               });
@@ -70,6 +73,11 @@ var config={
             var href=data.href;
             webview1.query=data.query;
 
+            // send query to webContents
+            var ipcRenderer=electron.ipcRenderer;
+            global.query=data.query;
+            ipcRenderer.send('query',data.query);
+
             // open url in webview2
             webview2.src=href;
             console.log('opening '+href);
@@ -87,6 +95,50 @@ var config={
 
     // webview2 event handlers
     content: {
+      main: {
+        webContents: {
+          'ipc-message': function(event,args){
+//            console.log('IPCMESSAGE',event,args);
+            if (args[0]=='query') global.query=args[1];
+          },
+        },
+        session: {
+          'will-download': function(event, item, webContents) {
+  //          console.log('GLOBAL',global.query);
+            var url=item.getURL();
+            var hostname=url.match(/:\/\/([^\/]+)\//)[1];
+            var basename=path.basename(url);
+            var savePath=path.join(config.savePath||__dirname, sanitize(global.query.replace(/ /g,'_')+'-'+Date.now()+'-'+hostname+'-'+basename));
+            var tempPath=savePath+'.crdownload';
+            item.setSavePath(tempPath);
+            item.on('updated', function(){
+              var frac=item.getReceivedBytes()/(item.getTotalBytes()+1);
+        //      console.log(Math.round(frac*100));
+        //      mainWindow.setProgressBar(frac);
+        //      mainWindow.webContents.send('progress_download',{total:item.getTotalBytes(),frac:frac});
+            })
+            item.on('done', function(e, state) {
+              //mainWindow.setProgressBar(-1);
+              if (state === 'completed') {
+                console.log('Download successfully '+savePath);
+                mainWindow.webContents.send('downloadSuccess',url);
+                try {
+                  if (!fs.existsSync(savePath) && fs.existsSync(tempPath)) {
+                    fs.renameSync(tempPath,savePath);
+                  }
+                } catch(e) {
+                  console.log(e);
+                }
+
+              } else {
+                console.log('Download is cancelled or interrupted that can\'t be resumed',savePath);
+                mainWindow.webContents.send('downloadFailure',url);
+              }
+            });
+          }
+        }
+      },
+
       webview: {
         ipcEvents: {
           processPage: function(event,options) {

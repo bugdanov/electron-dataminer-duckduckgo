@@ -138,6 +138,7 @@ var config={
         },
         session: {
           'will-download': function(event, item, webContents) {
+            mainWindow.webContents.send('clearTimeout');
   //          console.log('GLOBAL',global.query);
             var url=item.getURL();
             var hostname=url.match(/:\/\/([^\/]+)\//)[1];
@@ -205,6 +206,24 @@ var config={
 
       renderer: {
         ipcEvents: {
+          clearTimeout: function() {
+            clearTimeout(webview2.timeout);
+          },
+
+          downloadSuccess: function(){
+            webview1.send('shift',config.webviews.webview1);
+            process.nextTick(function(){
+              webview1.send('processPage',config.webviews.webview1);
+            });
+          },
+
+          downloadFailure: function(){
+            webview1.send('shift',config.webviews.webview1);
+            process.nextTick(function(){
+              webview1.send('processPage',config.webviews.webview1);
+            });
+          },
+
           // save the text sent from webview1
           saveContent: function(event,options) {
             clearTimeout(webview2.timeout);
